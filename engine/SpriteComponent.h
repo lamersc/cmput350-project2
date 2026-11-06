@@ -14,9 +14,10 @@ namespace ECSEngine {
 // This is only defined if an entity also has a LocationComponent.
 class SpriteComponent {
 public:
-    SpriteID textureID;
-    Rect bounds;
-    bool worldSpace;  // If false, this sprite is drawn in screen space instead of world space
+    // AI-ASSISTED (Claude): default member initializers
+    SpriteID textureID = 0;   // index from SpriteManager::RegisterTexture
+    Rect bounds{};            // where to draw, relative to the entity's location (world units)
+    bool worldSpace = true;  // If false, this sprite is drawn in screen space instead of world space
 private:
 };
 
