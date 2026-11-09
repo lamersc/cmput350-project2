@@ -18,6 +18,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#include <optional>
+
 namespace ECSEngine {
 
 template <typename... Components>
