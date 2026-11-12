@@ -33,9 +33,9 @@ public:
 
     // AI-ASSISTED (Claude): Run (left/right only)
     /**
-     * Accelerates each InputComponent's entity left/right from the arrow keys,
-     * clamped to kMaxRunVelocity. Runs first, before Gravity and Movement.
-     * TODO: air acceleration (needs onGround), deceleration, jump, dash.
+        * Accelerates left/right from the arrow keys (clamped to kMaxRunVelocity) and
+        * decelerates to a stop when no key, or both keys, are held.
+        * TODO: air acceleration (needs onGround), jump, variable jump height, dash.
      */
     tSystemReturn Run(EngineView<Components...>* engine) override {
         auto& em = engine->GetEntityManager();
