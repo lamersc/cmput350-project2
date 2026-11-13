@@ -26,6 +26,7 @@
 #include <vector>
 #include <array>
 #include <tuple>
+#include <utility>
 
 #include "Component.h"
 #include "Entity.h"
@@ -83,13 +84,13 @@ public:
         if (!mFreeIDs.empty()) {
             EntityID id = mFreeIDs.back();
             mFreeIDs.pop_back();
-            mEntities[id] = Entity(id, name);
+            mEntities[id] = Entity(id, name, ++mNextGeneration);
             mValid[id] = true;
             mComponentIndex[id].fill(kNullComponent);
             return id;
         }
         EntityID id = mEntities.size();
-        mEntities.push_back(Entity(id, name));
+        mEntities.push_back(Entity(id, name, ++mNextGeneration));
         mValid.push_back(true);
 
         tIndexRow row;
@@ -129,6 +130,11 @@ public:
         return entity < mEntities.size() && mValid[entity];
     }
 
+    size_t GetGeneration(EntityID entity) const {
+        assert(IsValid(entity));
+        return mEntities[entity].mGeneration;
+    }
+
     // AI-ASSISTED (Claude)
     /**
      * Attaches a component to an entity. The component is copied into storage.
@@ -148,11 +154,11 @@ public:
         if (!storage.mFreeList.empty()) {          // reuse a freed slot
             slot = storage.mFreeList.back();
             storage.mFreeList.pop_back();
-            storage.mStorage[slot] = component;
+            storage.mStorage[slot] = std::move(component);
             storage.mValid[slot] = true;
         } else {                                   // grow the packed list
             slot = storage.mStorage.size();
-            storage.mStorage.push_back(component);
+            storage.mStorage.push_back(std::move(component));
             storage.mValid.push_back(true);
         }
         mComponentIndex[entity][TypeIndex<T>()] = slot;  // leave the note
@@ -172,6 +178,7 @@ public:
         assert(HasComponent<T>(entity));
         size_t& slot = mComponentIndex[entity][TypeIndex<T>()];
         ComponentStorage<T>& storage = GetComponentStorage<T>();
+        storage.mStorage[slot] = T{};
         storage.mValid[slot] = false;              // data stays, but marked dead
         storage.mFreeList.push_back(slot);
         slot = kNullComponent;                     // entity no longer has T
@@ -235,6 +242,7 @@ public:
 
 
 private:
+    size_t mNextGeneration = 0;
     // AI-ASSISTED (Claude): these three members
     std::vector<Entity> mEntities;      // slot i holds entity i (even if removed)
     std::vector<bool> mValid;           // mValid[i] == true means entity i is alive

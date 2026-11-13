@@ -2,6 +2,7 @@
 
 
 #include "CollisionComponent.h"
+#include "Entity.h"
 #include "LocationComponent.h"
 #include "SystemManager.h"
 

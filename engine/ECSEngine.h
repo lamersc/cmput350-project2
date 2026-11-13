@@ -35,6 +35,30 @@ public:
 };
 
 template <typename... Components>
+void ProcessInputEvent(EntityManager<Components...>& entities, const sf::Event& event) {
+    if constexpr ((std::is_same_v<InputComponent, Components> || ...)) {
+        auto& inputs = entities.template GetComponentStorage<InputComponent>();
+        const auto* pressed = event.getIf<sf::Event::KeyPressed>();
+        const auto* released = event.getIf<sf::Event::KeyReleased>();
+        const bool lostFocus = event.is<sf::Event::FocusLost>();
+        if (!lostFocus && pressed == nullptr && released == nullptr) return;
+
+        size_t bit = Key::ScanCount;
+        if (!lostFocus) {
+            const auto code = pressed != nullptr ? pressed->scancode : released->scancode;
+            if (code == sf::Keyboard::Scancode::Unknown) return;
+            bit = static_cast<size_t>(code);
+            if (bit >= Key::ScanCount) return;
+        }
+        for (size_t i = 0; i < inputs.mStorage.size(); ++i) {
+            if (!inputs.mValid[i]) continue;
+            if (lostFocus) inputs.mStorage[i].keydown.reset();
+            else inputs.mStorage[i].keydown.set(bit, pressed != nullptr);
+        }
+    }
+}
+
+template <typename... Components>
 class ECSEngine : public EngineView<Components...> {
 public:
     ECSEngine(unsigned int width, unsigned int height, const std::string& name);
@@ -75,7 +99,7 @@ ECSEngine<Components...>::ECSEngine(unsigned int width, unsigned int height,
     : mWindowManager(width, height, name) {}
 
 template <typename... Components>
-ECSEngine<Components...>::~ECSEngine() {}
+ECSEngine<Components...>::~ECSEngine() { mSystemManager.ClearSystems(); }
 
 // AI-ASSISTED (Claude): Run
 /**
@@ -106,11 +130,12 @@ void ECSEngine<Components...>::Run() {
 template <typename... Components>
 bool ECSEngine<Components...>::ProcessEvents() {
     // "template" is needed because mEntityManager's type depends on Components.
-    auto& inputs = mEntityManager.template GetComponentStorage<InputComponent>();
-
     // 1. Remember last frame's keys, skipping dead slots.
-    for (size_t i = 0; i < inputs.mStorage.size(); ++i) {
-        if (inputs.mValid[i]) inputs.mStorage[i].lastKeydown = inputs.mStorage[i].keydown;
+    if constexpr ((std::is_same_v<InputComponent, Components> || ...)) {
+        auto& inputs = mEntityManager.template GetComponentStorage<InputComponent>();
+        for (size_t i = 0; i < inputs.mStorage.size(); ++i) {
+            if (inputs.mValid[i]) inputs.mStorage[i].lastKeydown = inputs.mStorage[i].keydown;
+        }
     }
 
     // 2. Handle events.
@@ -118,18 +143,25 @@ bool ECSEngine<Components...>::ProcessEvents() {
     while (const std::optional<sf::Event> event = window->pollEvent()) {
         if (event->is<sf::Event::Closed>()) return false;
 
+        if (const auto* resized = event->getIf<sf::Event::Resized>()) {
+            if (resized->size.x > 0 && resized->size.y > 0) {
+                window->setView(sf::View(sf::FloatRect(
+                    {0.f, 0.f}, {static_cast<float>(resized->size.x),
+                                static_cast<float>(resized->size.y)})));
+            }
+        }
         const auto* pressed = event->getIf<sf::Event::KeyPressed>();
         const auto* released = event->getIf<sf::Event::KeyReleased>();
-        if (pressed == nullptr && released == nullptr) continue;
+        if (pressed == nullptr && released == nullptr) {
+            ProcessInputEvent(mEntityManager, *event);
+            continue;
+        }
 
         sf::Keyboard::Scancode code = (pressed != nullptr) ? pressed->scancode : released->scancode;
         if (code == sf::Keyboard::Scancode::Unknown) continue;  // -1 is not a valid bit
-        size_t bit = static_cast<size_t>(code);
 
         // 3. Set or clear that key on every live input component.
-        for (size_t i = 0; i < inputs.mStorage.size(); ++i) {
-            if (inputs.mValid[i]) inputs.mStorage[i].keydown.set(bit, pressed != nullptr);
-        }
+        ProcessInputEvent(mEntityManager, *event);
     }
     return true;
 }
