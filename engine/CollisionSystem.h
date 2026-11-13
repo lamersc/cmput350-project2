@@ -1,9 +1,15 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include <string>
 
+#include "CameraComponent.h"
 #include "CollisionComponent.h"
+#include "EntityManager.h"
+#include "InputComponent.h"
 #include "LocationComponent.h"
+#include "ScoreComponent.h"
 #include "SystemManager.h"
 namespace ECSEngine {
 
@@ -23,7 +29,6 @@ public:
      * register as a wall hit), then horizontal ones. Which side the entity came
      * from is decided with previousCollisionBox (world coordinates, set by
      * CollisionLateSystem). Flags set here are read next frame by Input and Gravity.
-     * TODO: dynamic-vs-dynamic (star pickup, bouncing), screen shake, sounds.
      */
     tSystemReturn Run(EngineView<Components...>* engine) override {
         auto& em = engine->GetEntityManager();
@@ -41,6 +46,11 @@ public:
             if (em.template HasComponent<MovementComponent>(did)) {
                 mc = &em.template GetComponent<MovementComponent>(did);
             }
+            Point2D velocity = mc != nullptr ? mc->velocity : Point2D();
+            bool wasGround = dc.onGround != 0;
+            bool wasCeiling = dc.onCeiling != 0;
+            bool wasLeftWall = dc.onLeftWall != 0;
+            bool wasRightWall = dc.onRightWall != 0;
 
             dc.onGround = 0;
             dc.onCeiling = 0;
@@ -83,6 +93,46 @@ public:
                     dc.onLeftWall = 1;
                     if (mc != nullptr && mc->velocity.x < 0) mc->velocity.x = 0;
                 }
+            }
+            if (!em.template HasComponent<InputComponent>(did)) continue;
+            if (dc.onGround && !wasGround && velocity.y > 0) {
+                engine->GetSoundManager().GetSound("land").play();
+            }
+            bool hitX = (dc.onLeftWall && !wasLeftWall) || (dc.onRightWall && !wasRightWall);
+            bool hitY = (dc.onGround && !wasGround) || (dc.onCeiling && !wasCeiling);
+            if (hitX || hitY) {
+                for (const auto& cameraEntity : em) {
+                    EntityID cameraID = cameraEntity.GetID();
+                    if (!em.IsValid(cameraID) ||
+                        !em.template HasComponent<CameraComponent>(cameraID) ||
+                        !em.template HasComponent<CameraFollower>(cameraID)) continue;
+                    if (em.template GetComponent<CameraFollower>(cameraID).entityID != did)
+                        continue;
+                    CameraShake shake{
+                        6, {hitX ? std::min(8.f, std::abs(velocity.x) * 0.01f) : 0.f,
+                            hitY ? std::min(8.f, std::abs(velocity.y) * 0.01f) : 0.f}};
+                    if (em.template HasComponent<CameraShake>(cameraID)) {
+                        em.template GetComponent<CameraShake>(cameraID) = shake;
+                    } else {
+                        em.template AddComponent<CameraShake>(cameraID, shake);
+                    }
+                }
+            }
+            if (!em.template HasComponent<ScoreComponent>(did)) continue;
+            for (const auto& star : em) {
+                EntityID sid = star.GetID();
+                if (sid == did || !em.IsValid(sid) ||
+                    !em.template HasComponent<LocationComponent>(sid) ||
+                    !em.template HasComponent<CollisionComponent>(sid) ||
+                    em.template HasComponent<InputComponent>(sid)) continue;
+                const auto& sc = em.template GetComponent<CollisionComponent>(sid);
+                const auto& sl = em.template GetComponent<LocationComponent>(sid);
+                if (sc.staticEntity ||
+                    !Overlaps(ToBox(dl.loc, dc.collisionBox), ToBox(sl.loc, sc.collisionBox)))
+                    continue;
+                ++em.template GetComponent<ScoreComponent>(did).score;
+                engine->GetSoundManager().GetSound("star").play();
+                em.RemoveEntity(sid);
             }
         }
         return kContinue;
