@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
+#include <string>
 #include <tuple>
 
 // An entity can have any component it is templated with,
@@ -17,9 +19,11 @@ public:
 
 private:
     Entity() = default;
-    Entity(EntityID eid, const std::string& name) : mID(eid), mType(name) {}
+    Entity(EntityID eid, const std::string& name, size_t generation)
+        : mID(eid), mType(name), mGeneration(generation) {}
     EntityID mID;
     std::string mType;
+    size_t mGeneration = 0;
 
     template <typename... T>
     friend class EntityManager;

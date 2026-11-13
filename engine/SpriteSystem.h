@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bitset>
+#include <cmath>
 #include <unordered_map>
 
 #include "CameraComponent.h"
@@ -54,8 +55,9 @@ public:
             sprite.setPosition({screen.topLeft.x, screen.topLeft.y});
             // scale texture rect to the destination size
             sf::IntRect src = sprite.getTextureRect();
-            sprite.setScale({screen.width / static_cast<float>(src.size.x),
-                            screen.height / static_cast<float>(src.size.y)});
+            if (src.size.x == 0 || src.size.y == 0) continue;
+            sprite.setScale({screen.width / std::abs(static_cast<float>(src.size.x)),
+                            screen.height / std::abs(static_cast<float>(src.size.y))});
             window->draw(sprite);
         }
         window->display();

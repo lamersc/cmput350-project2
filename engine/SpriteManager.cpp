@@ -1,5 +1,7 @@
 #include "SpriteManager.h"
 
+#include <stdexcept>
+
 namespace ECSEngine {
 
 SpriteID SpriteManager::RegisterTexture(const std::string& texturePath, const Rect& sourceRect) {
@@ -11,6 +13,10 @@ SpriteID SpriteManager::RegisterTexture(const std::string& texturePath, const Re
         bool ok = it->second.loadFromFile(texturePath);
         assert(ok && "Failed to load texture");
         (void)ok;  // keeps release builds (assert compiled out) warning-free
+        if (!ok) {
+            mTextures.erase(it);
+            throw std::runtime_error("Failed to load texture: " + texturePath);
+        }
     }
 
     // Rect stores floats, but SFML's texture rectangle wants ints.

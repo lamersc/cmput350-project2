@@ -2,7 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
+#include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "CameraComponent.h"
 #include "CollisionComponent.h"
@@ -14,8 +18,20 @@
 namespace ECSEngine {
 
 template <typename... Components>
+class DynamicContactHandler {
+public:
+    virtual ~DynamicContactHandler() = default;
+    virtual void OnContact(EngineView<Components...>* engine, EntityID first, EntityID second) = 0;
+};
+
+template <typename... Components>
 class CollisionSystem : public System<Components...> {
 public:
+    using ContactHandler = DynamicContactHandler<Components...>;
+
+    explicit CollisionSystem(std::unique_ptr<ContactHandler> handler = nullptr)
+        : mDynamicContactHandler(std::move(handler)) {}
+
     const std::string& GetName() const override {
         static std::string name("CollisionSystem");
         return name;
@@ -56,6 +72,7 @@ public:
             dc.onCeiling = 0;
             dc.onLeftWall = 0;
             dc.onRightWall = 0;
+            if (dc.collisionBox.width <= 0 || dc.collisionBox.height <= 0) continue;
 
             const Box prev = ToBox(dc.previousCollisionBox);
 
@@ -66,13 +83,15 @@ public:
                 Box sb;
                 if (!GetStaticBox(em, s.GetID(), did, sb)) continue;
                 Box cur = ToBox(dl.loc, dc.collisionBox);
-                if (!Overlaps(cur, sb)) continue;
+                if (cur.left >= sb.right || cur.right <= sb.left) continue;
 
-                if (prev.bottom <= sb.top + kEps) {  // came from above: land
+                if (prev.bottom <= sb.top + kEps && cur.bottom >= sb.top - kEps &&
+                    cur.bottom >= prev.bottom && velocity.y >= 0) {  // came from above: land
                     dl.loc.y += sb.top - cur.bottom;
                     dc.onGround = 1;
                     if (mc != nullptr && mc->velocity.y > 0) mc->velocity.y = Bounce(mc->velocity.y, isStar);
-                } else if (prev.top >= sb.bottom - kEps) {  // came from below: bonk head
+                } else if (prev.top >= sb.bottom - kEps && cur.top <= sb.bottom + kEps &&
+                           cur.top <= prev.top && velocity.y <= 0) {  // came from below: bonk head
                     dl.loc.y += sb.bottom - cur.top;
                     dc.onCeiling = 1;
                     if (mc != nullptr && mc->velocity.y < 0) mc->velocity.y = Bounce(mc->velocity.y, isStar);
@@ -84,16 +103,51 @@ public:
                 Box sb;
                 if (!GetStaticBox(em, s.GetID(), did, sb)) continue;
                 Box cur = ToBox(dl.loc, dc.collisionBox);
-                if (!Overlaps(cur, sb)) continue;
+                if (cur.top >= sb.bottom || cur.bottom <= sb.top) continue;
 
-                if (prev.right <= sb.left + kEps) {  // came from the left: wall on our right
+                if (prev.right <= sb.left + kEps && cur.right >= sb.left - kEps &&
+                    cur.right >= prev.right && velocity.x >= 0) {  // came from the left: wall on our right
                     dl.loc.x += sb.left - cur.right;
                     dc.onRightWall = 1;
                     if (mc != nullptr && mc->velocity.x > 0) mc->velocity.x = Bounce(mc->velocity.x, isStar);
-                } else if (prev.left >= sb.right - kEps) {  // wall on our left
+                } else if (prev.left >= sb.right - kEps && cur.left <= sb.right + kEps &&
+                           cur.left <= prev.left && velocity.x <= 0) {  // wall on our left
                     dl.loc.x += sb.right - cur.left;
                     dc.onLeftWall = 1;
                     if (mc != nullptr && mc->velocity.x < 0) mc->velocity.x = Bounce(mc->velocity.x, isStar);
+                }
+            }
+
+            for (const auto& s : em) {
+                Box sb;
+                if (!GetStaticBox(em, s.GetID(), did, sb)) continue;
+                Box cur = ToBox(dl.loc, dc.collisionBox);
+                if (!Overlaps(cur, sb)) continue;
+                const float left = cur.right - sb.left;
+                const float right = sb.right - cur.left;
+                const float top = cur.bottom - sb.top;
+                const float bottom = sb.bottom - cur.top;
+                const float overlap = std::min({left, right, top, bottom});
+                if (overlap == top) {
+                    dl.loc.y -= top;
+                    dc.onGround = 1;
+                    if (mc != nullptr && mc->velocity.y > 0)
+                        mc->velocity.y = Bounce(mc->velocity.y, isStar);
+                } else if (overlap == bottom) {
+                    dl.loc.y += bottom;
+                    dc.onCeiling = 1;
+                    if (mc != nullptr && mc->velocity.y < 0)
+                        mc->velocity.y = Bounce(mc->velocity.y, isStar);
+                } else if (overlap == left) {
+                    dl.loc.x -= left;
+                    dc.onRightWall = 1;
+                    if (mc != nullptr && mc->velocity.x > 0)
+                        mc->velocity.x = Bounce(mc->velocity.x, isStar);
+                } else {
+                    dl.loc.x += right;
+                    dc.onLeftWall = 1;
+                    if (mc != nullptr && mc->velocity.x < 0)
+                        mc->velocity.x = Bounce(mc->velocity.x, isStar);
                 }
             }
             if (!em.template HasComponent<InputComponent>(did)) continue;
@@ -137,10 +191,38 @@ public:
                 em.RemoveEntity(sid);
             }
         }
+        if (mDynamicContactHandler) {
+            std::vector<Contact> contacts;
+            for (auto first = em.cbegin(); first != em.cend(); ++first) {
+                Box a;
+                if (!GetDynamicBox(em, first->GetID(), a)) continue;
+                for (auto second = std::next(first); second != em.cend(); ++second) {
+                    Box b;
+                    if (GetDynamicBox(em, second->GetID(), b) && Overlaps(a, b)) {
+                        contacts.push_back({first->GetID(), second->GetID(),
+                            em.GetGeneration(first->GetID()), em.GetGeneration(second->GetID())});
+                    }
+                }
+            }
+            for (const auto& [first, second, firstGeneration, secondGeneration] : contacts) {
+                Box a, b;
+                if (GetDynamicBox(em, first, a) && GetDynamicBox(em, second, b) &&
+                    em.GetGeneration(first) == firstGeneration &&
+                    em.GetGeneration(second) == secondGeneration &&
+                    Overlaps(a, b)) {
+                    mDynamicContactHandler->OnContact(engine, first, second);
+                }
+            }
+        }
         return kContinue;
     }
 
 private:
+    std::unique_ptr<ContactHandler> mDynamicContactHandler;
+    struct Contact {
+        EntityID first, second;
+        size_t firstGeneration, secondGeneration;
+    };
     struct Box {
         float left = 0, top = 0, right = 0, bottom = 0;
     };
@@ -167,9 +249,20 @@ private:
         if (!em.template HasComponent<LocationComponent>(sid)) return false;
         if (!em.template HasComponent<CollisionComponent>(sid)) return false;
         const CollisionComponent& sc = em.template GetComponent<CollisionComponent>(sid);
-        if (!sc.staticEntity) return false;
+        if (!sc.staticEntity || sc.collisionBox.width <= 0 || sc.collisionBox.height <= 0)
+            return false;
         const LocationComponent& sl = em.template GetComponent<LocationComponent>(sid);
         out = ToBox(sl.loc, sc.collisionBox);
+        return true;
+    }
+
+    static bool GetDynamicBox(EntityManager<Components...>& em, EntityID id, Box& out) {
+        if (!em.IsValid(id) || !em.template HasComponent<LocationComponent>(id) ||
+            !em.template HasComponent<CollisionComponent>(id)) return false;
+        const auto& collision = em.template GetComponent<CollisionComponent>(id);
+        if (collision.staticEntity || collision.collisionBox.width <= 0 ||
+            collision.collisionBox.height <= 0) return false;
+        out = ToBox(em.template GetComponent<LocationComponent>(id).loc, collision.collisionBox);
         return true;
     }
 

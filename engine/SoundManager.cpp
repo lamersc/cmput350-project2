@@ -9,6 +9,8 @@ void SoundManager::RegisterSound(const std::string& soundPath, const std::string
     if (!loaded.loadFromFile(soundPath)) {
         throw std::runtime_error("Failed to load sound: " + soundPath);
     }
+    auto existing = mSounds.find(soundName);
+    if (existing != mSounds.end()) existing->second.stop();
     auto [buffer, inserted] = mBuffers.try_emplace(soundName, loaded);
     if (!inserted) buffer->second = loaded;
     auto [sound, created] = mSounds.try_emplace(soundName, buffer->second);

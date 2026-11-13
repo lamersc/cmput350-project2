@@ -6,6 +6,7 @@
 #include "InputComponent.h"
 #include "Keyboard.h"
 #include "LocationComponent.h"
+#include "SoundManager.h"
 #include "SystemManager.h"
 #include "Timing.h"
 
