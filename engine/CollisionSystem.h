@@ -59,6 +59,8 @@ public:
 
             const Box prev = ToBox(dc.previousCollisionBox);
 
+            const bool isStar = IsStar(em, did);
+
             // ---- Vertical pass ----
             for (const auto& s : em) {
                 Box sb;
@@ -69,11 +71,11 @@ public:
                 if (prev.bottom <= sb.top + kEps) {  // came from above: land
                     dl.loc.y += sb.top - cur.bottom;
                     dc.onGround = 1;
-                    if (mc != nullptr && mc->velocity.y > 0) mc->velocity.y = 0;
+                    if (mc != nullptr && mc->velocity.y > 0) mc->velocity.y = Bounce(mc->velocity.y, isStar);
                 } else if (prev.top >= sb.bottom - kEps) {  // came from below: bonk head
                     dl.loc.y += sb.bottom - cur.top;
                     dc.onCeiling = 1;
-                    if (mc != nullptr && mc->velocity.y < 0) mc->velocity.y = 0;
+                    if (mc != nullptr && mc->velocity.y < 0) mc->velocity.y = Bounce(mc->velocity.y, isStar);
                 }
             }
 
@@ -87,11 +89,11 @@ public:
                 if (prev.right <= sb.left + kEps) {  // came from the left: wall on our right
                     dl.loc.x += sb.left - cur.right;
                     dc.onRightWall = 1;
-                    if (mc != nullptr && mc->velocity.x > 0) mc->velocity.x = 0;
+                    if (mc != nullptr && mc->velocity.x > 0) mc->velocity.x = Bounce(mc->velocity.x, isStar);
                 } else if (prev.left >= sb.right - kEps) {  // wall on our left
                     dl.loc.x += sb.right - cur.left;
                     dc.onLeftWall = 1;
-                    if (mc != nullptr && mc->velocity.x < 0) mc->velocity.x = 0;
+                    if (mc != nullptr && mc->velocity.x < 0) mc->velocity.x = Bounce(mc->velocity.x, isStar);
                 }
             }
             if (!em.template HasComponent<InputComponent>(did)) continue;
@@ -169,6 +171,30 @@ private:
         const LocationComponent& sl = em.template GetComponent<LocationComponent>(sid);
         out = ToBox(sl.loc, sc.collisionBox);
         return true;
+    }
+
+    // AI-ASSISTED (Claude): kStarBounceKeep, kStarRestSpeed, IsStar
+    /// Fraction of the normal-direction speed a star keeps after a bounce (unitless).
+    static constexpr float kStarBounceKeep = 0.7f;
+    /// Below this normal-direction speed (px/s) a star stops bouncing and rests.
+    /// Gravity adds about 1000 * kFixedDt = 16.7 px/s per frame, so 50 sits clearly above that.
+    static constexpr float kStarRestSpeed = 50.f;
+
+    /// A "star" is a valid dynamic collider that can move and has no InputComponent.
+    static bool IsStar(EntityManager<Components...>& em, EntityID id) {
+        if (!em.IsValid(id)) return false;
+        if (!em.template HasComponent<CollisionComponent>(id)) return false;
+        if (!em.template HasComponent<MovementComponent>(id)) return false;
+        if (em.template HasComponent<InputComponent>(id)) return false;
+        return em.template GetComponent<CollisionComponent>(id).staticEntity == 0;
+    }
+
+        // AI-ASSISTED (Claude): Bounce
+    /// New velocity along the collision axis. Non-stars stop (0). Stars reflect and keep
+    /// kStarBounceKeep of their speed, or stop if slower than kStarRestSpeed (px/s).
+    static float Bounce(float v, bool isStar) {
+        if (!isStar || std::abs(v) <= kStarRestSpeed) return 0.f;
+        return -v * kStarBounceKeep;
     }
 };
 

@@ -6,6 +6,7 @@
 #include "SystemManager.h"
 #include "CollisionComponent.h"
 #include "Timing.h"
+#include "InputComponent.h"
 
 namespace ECSEngine
 {
@@ -47,8 +48,13 @@ public:
                 --gc.disabledTimer;
                 continue;
             }
-			float gravityY = gc.acceleration.y;
-			if (mc.velocity.y > 0) gravityY *= kFallGravityMultiplier;  // falling: stronger gravity
+
+			// AI-ASSISTED (Claude): player-only fall multiplier and wall slide
+            const bool isPlayer = em.template HasComponent<InputComponent>(id);
+            float gravityY = gc.acceleration.y;
+            if (isPlayer && mc.velocity.y > 0) gravityY *= kFallGravityMultiplier;
+
+
             // AI-ASSISTED (Claude): wall slide cap
             mc.velocity.x += gc.acceleration.x * kFixedDt;
             mc.velocity.y += gravityY * kFixedDt;
@@ -56,7 +62,7 @@ public:
             if (em.template HasComponent<CollisionComponent>(id)) {
                 const CollisionComponent& cc = em.template GetComponent<CollisionComponent>(id);
                 const bool onWall = cc.onLeftWall != 0 || cc.onRightWall != 0;
-                if (onWall && cc.onGround == 0 && mc.velocity.y > kWallSlideSpeed) {
+                                if (isPlayer && onWall && cc.onGround == 0 && mc.velocity.y > kWallSlideSpeed) {
                     mc.velocity.y = kWallSlideSpeed;
                 }
             }
