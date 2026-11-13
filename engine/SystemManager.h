@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cassert>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 // #include "ECSEngine.h"
 
@@ -32,6 +37,7 @@ public:
         return true;
     }
     void AddSystem(std::unique_ptr<System<Components...>>&& system) {
+        assert(system != nullptr);
         mSystems.push_back(std::move(system));
     }
     void ClearSystems() { mSystems.clear(); }

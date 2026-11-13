@@ -1,8 +1,10 @@
 #pragma once
 
 #include <unordered_map>
+#include <limits>
 
 #include "MathUtil.h"
+#include "Entity.h"
 #include "SpriteManager.h"
 
 namespace ECSEngine {
@@ -11,9 +13,11 @@ namespace ECSEngine {
 // This is only defined if an entity also has a LocationComponent.
 class ScoreComponent {
 public:
-    int score;
-    SpriteID digitTextureID[10];
-    EntityID digitID[3];
+    int score = 0;
+    SpriteID digitTextureID[10]{};
+    EntityID digitID[3]{std::numeric_limits<EntityID>::max(),
+                        std::numeric_limits<EntityID>::max(),
+                        std::numeric_limits<EntityID>::max()};
 
 private:
 };

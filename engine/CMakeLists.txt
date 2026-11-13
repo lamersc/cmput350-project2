@@ -1,7 +1,8 @@
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
+option(ECS_USE_BUNDLED_SFML "Use the supplied Linux x86-64 SFML bundle" OFF)
+if(ECS_USE_BUNDLED_SFML OR (CMAKE_SYSTEM_NAME STREQUAL "Linux"
     AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$"
     AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
-    AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "9.4.0")
+    AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "9.4.0"))
     include(${CMAKE_SOURCE_DIR}/cmake/ImportSFML.cmake)
 else()
     include(FetchContent)
@@ -26,14 +27,21 @@ set(ECS_ENGINE_FILES
     Entity.h
     MathUtil.h
     Keyboard.h
+    Timing.h
+    TileMap.h TileMap.cpp
 )
 
 set(ECS_COMPONENT_FILES
     Component.h
     CameraComponent.h
+    CameraFollowerComponent.h
+    CameraShakeComponent.h
     CollisionComponent.h
     InputComponent.h
     LocationComponent.h
+    MovementComponent.h
+    GravityComponent.h
+    RespawnComponent.h
     ScoreComponent.h
     SpawnComponent.h
     SpriteComponent.h
@@ -71,14 +79,16 @@ source_group("Components" FILES ${ECS_COMPONENT_FILES})
 source_group("Systems" FILES ${ECS_SYSTEM_FILES})
 source_group("Managers" FILES ${ECS_MANAGER_FILES})
 
-add_executable(ECSTest EngineTest.cpp)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/EngineTest.cpp")
+    add_executable(ECSTest EngineTest.cpp)
+    target_compile_features(ECSTest PRIVATE cxx_std_20)
+    target_link_libraries(ECSTest PRIVATE ECS)
+    enable_warnings(ECSTest)
+endif()
 
 target_include_directories(ECS INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(ECS PRIVATE cxx_std_20)
-target_compile_features(ECSTest PRIVATE cxx_std_20)
 
 target_link_libraries(ECS PUBLIC SFML::Graphics SFML::Audio)
-target_link_libraries(ECSTest PRIVATE ECS)
 
 enable_warnings(ECS)
-enable_warnings(ECSTest)
