@@ -41,6 +41,11 @@ int main(int argc, char* argv[]) {
     Engine engine(1024, 768, "Test Engine");
 
     // Load sounds
+    auto& sounds = engine.GetSoundManager();
+    sounds.RegisterSound(gResourcePath + "sfx_jump.ogg", "jump");
+    sounds.RegisterSound(gResourcePath + "footstep_grass_003.ogg", "land");
+    sounds.RegisterSound(gResourcePath + "sfx_gem.ogg", "star");
+    sounds.RegisterSound(gResourcePath + "footstep_snow_001.ogg", "wall");
 
     // Load maps
 
@@ -49,6 +54,21 @@ int main(int argc, char* argv[]) {
     // Setup score component
 
     // Setup Camera
+    auto& em = engine.GetEntityManager();
+    auto& wm = engine.GetWindowManager();
+    auto bounds = wm.GetWindowBounds();
+    auto camera = em.CreateEntity("camera");
+    em.AddComponent(camera, ECSEngine::CameraComponent{
+        wm.GetWorldCenter(), wm.GetWorldScale(),
+        {{bounds.width * 0.1f, 0.f}, bounds.width * 0.8f, bounds.height},
+        {{bounds.width * 0.3f, 0.f}, bounds.width * 0.4f, bounds.height}, 0.1f});
+    for (const auto& entity : em) {
+        if (em.IsValid(entity.GetID()) &&
+            em.HasComponent<ECSEngine::InputComponent>(entity.GetID())) {
+            em.AddComponent(camera, ECSEngine::CameraFollower{entity.GetID()});
+            break;
+        }
+    }
 
     // Add all systems
     auto& sm = engine.GetSystemManager();

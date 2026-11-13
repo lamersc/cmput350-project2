@@ -11,6 +11,10 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
+#include "LocationComponent.h"
+#include "SpriteComponent.h"
+#include "WindowManager.h"
+
 namespace ECSEngine {
 
 template <typename... Components>
@@ -21,7 +25,42 @@ public:
         return name;
     }
 
-    tSystemReturn Run(EngineView<Components...>* engine) override { return kContinue; }
+    // AI-ASSISTED (Claude): Run
+    /**
+     * Draws every entity that has a SpriteComponent and a LocationComponent,
+     * in entity-ID order, then calls display() once.
+     * Resources are reached only through the EngineView API.
+     */
+    tSystemReturn Run(EngineView<Components...>* engine) override {
+        auto& em = engine->GetEntityManager();
+        auto& sprites = engine->GetSpriteManager();
+        auto& wm = engine->GetWindowManager();
+        auto window = wm.GetWindow();
+
+        for (const auto& e : em) {
+            EntityID id = e.GetID();
+            if (!em.IsValid(id)) continue;                                // skip removed entities
+            if (!em.template HasComponent<SpriteComponent>(id)) continue;
+            if (!em.template HasComponent<LocationComponent>(id)) continue;
+
+            const SpriteComponent& sc = em.template GetComponent<SpriteComponent>(id);
+            const LocationComponent& lc = em.template GetComponent<LocationComponent>(id);
+
+            // Sprite rectangle is relative to the entity's location.
+            Rect world{{lc.loc.x + sc.bounds.topLeft.x, lc.loc.y + sc.bounds.topLeft.y}, sc.bounds.width, sc.bounds.height};
+            Rect screen = sc.worldSpace ? wm.WorldToWindow(world) : world;
+
+            sf::Sprite& sprite = sprites.GetSprite(sc.textureID);
+            sprite.setPosition({screen.topLeft.x, screen.topLeft.y});
+            // scale texture rect to the destination size
+            sf::IntRect src = sprite.getTextureRect();
+            sprite.setScale({screen.width / static_cast<float>(src.size.x),
+                            screen.height / static_cast<float>(src.size.y)});
+            window->draw(sprite);
+        }
+        window->display();
+        return kContinue;
+    }
 };
 
 }  // namespace ECSEngine
