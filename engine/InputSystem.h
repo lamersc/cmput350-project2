@@ -57,11 +57,11 @@ public:
      *    and ignores run input until the dash ends.
      * Wall contact only exists while the player presses into the wall, because
      * CollisionSystem sets the flag from an actual overlap.
-     * TODO: jump, land and wall sounds (need SoundManager names).
      */
     tSystemReturn Run(EngineView<Components...>* engine) override {
         auto& em = engine->GetEntityManager();
         auto& inputs = em.template GetComponentStorage<InputComponent>();
+        bool wallSliding = false;
 
         for (size_t i = 0; i < inputs.mStorage.size(); ++i) {
             if (!inputs.mValid[i]) continue;  // skip dead slots
@@ -118,14 +118,20 @@ public:
             if (jumpPressed) {
                 if (onGround) {
                     mc.velocity.y = -kJumpVelocity;  // screen y points down
+                    engine->GetSoundManager().GetSound("jump").play();
                 } else if (onLeftWall || onRightWall) {
                     mc.velocity.y = -kJumpVelocity;
                     mc.velocity.x = onLeftWall ? kWallJumpVelocity : -kWallJumpVelocity;
+                    engine->GetSoundManager().GetSound("jump").play();
                 }
             }
 
             // ---- Variable jump height: releasing Z while rising cuts the jump ----
             if (jumpReleased && mc.velocity.y < 0) mc.velocity.y *= kJumpCutFactor;
+            if (!onGround && mc.velocity.y > 0 &&
+                ((left && !right && onLeftWall) || (right && !left && onRightWall))) {
+                wallSliding = true;
+            }
 
             // ---- Fast fall ----
             if (down && mc.velocity.y > 0) mc.velocity.y += kFastFallAcceleration * kFixedDt;
@@ -148,8 +154,20 @@ public:
             if (mc.velocity.x > kMaxRunVelocity) mc.velocity.x = kMaxRunVelocity;
             if (mc.velocity.x < -kMaxRunVelocity) mc.velocity.x = -kMaxRunVelocity;
         }
+        if (wallSliding) {
+            auto& sound = engine->GetSoundManager().GetSound("wall");
+            sound.setLooping(true);
+            if (sound.getStatus() != sf::Sound::Status::Playing) sound.play();
+            mWallPlaying = true;
+        } else if (mWallPlaying) {
+            engine->GetSoundManager().GetSound("wall").stop();
+            mWallPlaying = false;
+        }
         return kContinue;
     }
+
+private:
+    bool mWallPlaying = false;
 };
 
 }  // namespace ECSEngine
