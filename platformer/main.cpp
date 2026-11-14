@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -6,6 +7,7 @@
 #include <unordered_map>
 #include <cmath>
 #include <cstdlib>
+#include <utility>
 
 #include "CameraSystem.h"
 #include "CollisionComponent.h"
@@ -115,6 +117,50 @@ public:
     }
 };
 
+class StarCollisionHandler : public ECSEngine::DynamicContactHandler<COMPONENTS> {
+public:
+    void OnContact(ECSEngine::EngineView<COMPONENTS>* engine,
+                   ECSEngine::EntityID first, ECSEngine::EntityID second) override {
+        auto& em = engine->GetEntityManager();
+        if (!em.HasComponent<ECSEngine::MovementComponent>(first) ||
+            !em.HasComponent<ECSEngine::MovementComponent>(second) ||
+            em.HasComponent<ECSEngine::InputComponent>(first) ||
+            em.HasComponent<ECSEngine::InputComponent>(second)) return;
+
+        auto& firstLocation = em.GetComponent<ECSEngine::LocationComponent>(first).loc;
+        auto& secondLocation = em.GetComponent<ECSEngine::LocationComponent>(second).loc;
+        const auto& firstBox = em.GetComponent<ECSEngine::CollisionComponent>(first).collisionBox;
+        const auto& secondBox = em.GetComponent<ECSEngine::CollisionComponent>(second).collisionBox;
+        const float firstX = firstLocation.x + firstBox.topLeft.x;
+        const float firstY = firstLocation.y + firstBox.topLeft.y;
+        const float secondX = secondLocation.x + secondBox.topLeft.x;
+        const float secondY = secondLocation.y + secondBox.topLeft.y;
+        const float overlapX = std::min(firstX + firstBox.width, secondX + secondBox.width) -
+                               std::max(firstX, secondX);
+        const float overlapY = std::min(firstY + firstBox.height, secondY + secondBox.height) -
+                               std::max(firstY, secondY);
+        if (overlapX <= 0 || overlapY <= 0) return;
+
+        auto& firstVelocity = em.GetComponent<ECSEngine::MovementComponent>(first).velocity;
+        auto& secondVelocity = em.GetComponent<ECSEngine::MovementComponent>(second).velocity;
+        if (overlapX < overlapY) {
+            const float direction = firstX + firstBox.width * 0.5f <=
+                                    secondX + secondBox.width * 0.5f ? -1.f : 1.f;
+            firstLocation.x += direction * overlapX * 0.5f;
+            secondLocation.x -= direction * overlapX * 0.5f;
+            if ((firstVelocity.x - secondVelocity.x) * direction < 0)
+                std::swap(firstVelocity.x, secondVelocity.x);
+        } else {
+            const float direction = firstY + firstBox.height * 0.5f <=
+                                    secondY + secondBox.height * 0.5f ? -1.f : 1.f;
+            firstLocation.y += direction * overlapY * 0.5f;
+            secondLocation.y -= direction * overlapY * 0.5f;
+            if ((firstVelocity.y - secondVelocity.y) * direction < 0)
+                std::swap(firstVelocity.y, secondVelocity.y);
+        }
+    }
+};
+
 int main(int argc, char* argv[]) {
     if (argc >= 3 && argv[1] == std::string("-path")) {
         gResourcePath = argv[2];
@@ -208,7 +254,8 @@ int main(int argc, char* argv[]) {
     sm.AddSystem(std::make_unique<ECSEngine::InputSystem<COMPONENTS>>());
     sm.AddSystem(std::make_unique<ECSEngine::GravitySystem<COMPONENTS>>());
     sm.AddSystem(std::make_unique<ECSEngine::MovementSystem<COMPONENTS>>());
-    sm.AddSystem(std::make_unique<ECSEngine::CollisionSystem<COMPONENTS>>());
+    sm.AddSystem(std::make_unique<ECSEngine::CollisionSystem<COMPONENTS>>(
+        std::make_unique<StarCollisionHandler>()));
     sm.AddSystem(std::make_unique<ECSEngine::ScoreSystem<COMPONENTS>>());
     sm.AddSystem(std::make_unique<ECSEngine::CameraSystem<COMPONENTS>>());
     sm.AddSystem(std::make_unique<ECSEngine::SpriteSystem<COMPONENTS>>());
