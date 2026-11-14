@@ -1,0 +1,69 @@
+CMPUT 350 Project 2
+
+Team: Christopher Lamers and Mohammad Umran Rahman
+
+Implementation
+--------------
+This project implements a reusable entity-component-system engine and a small
+SFML platformer. The engine has entity, sound, sprite, window and system
+managers. Systems process input, movement, gravity, collisions, score, camera,
+sprites and spawning. The game loads sky.map and world.map, creates the level,
+and uses the provided sprites and sounds. The player moves with the arrow keys,
+jumps with Z and dashes with C. Stars can be collected for points.
+
+Contributions
+-------------
+Christopher worked on the camera and sound functionality, reusable engine
+systems and fixes, map parsing, the spawning interface, and collision-related
+integration. Mohammad Umran Rahman worked on the entity and sprite managers,
+the ECS loop, movement, gravity, input, collisions, star behavior, game setup
+and testing. We collaborated on much of the core functionality over Discord,
+discussing implementation, integration and testing as the project developed.
+These descriptions include AI-assisted work; see the disclosure below.
+
+Resources and reference lifetimes
+---------------------------------
+Systems obtain managers through the engine or EngineView APIs. EntityManager
+owns entities and components. Entity IDs can be reused after removal, so callers
+must discard stale IDs and skip invalid slots when iterating. Component references
+can be invalidated by adding another component of the same type; reacquire them
+after changes and do not use a reference after its component is removed.
+
+SpriteManager owns textures and sprites. Sprite IDs remain valid for the
+manager's lifetime, but a reference returned by GetSprite can be invalidated by
+RegisterTexture, so retrieve it again when needed. SoundManager owns sound
+buffers and sounds. A GetSound reference remains valid until the manager is
+destroyed; registering the same sound name replaces its buffer and stops the
+existing sound. WindowManager holds a shared pointer to the render window.
+SystemManager owns systems through unique pointers and destroys them on clear
+or shutdown. Manager-owned resources should not be manually deleted by callers.
+
+Build and run
+-------------
+The project uses CMake, C++20 and SFML 3. From the project root, configure and
+build with:
+
+  cmake --preset debug
+  cmake --build build --target platformer
+  ./build/platformer/platformer -path assets/
+
+The resource path needs the trailing slash. Both map files and the image and
+sound assets must be present in that directory. The project also provides the
+ECSTest target. Lab-machine compilation and audible playback should be checked
+by the team before submission.
+
+AI and external support
+-----------------------
+Claude assisted with code, explanations, debugging, tests and documentation;
+Mohammad Umran Rahman's prompts and reflections are recorded in
+AI_LOG-Umran.txt. OpenAI's ChatGPT/Codex also assisted with implementation,
+review and testing of reusable engine functionality, including collision,
+input, movement, camera, rendering, score and spawning.
+
+The AI-generated work was reviewed and tested. The local build succeeded,
+and external regression checks and a visual game run exercised movement,
+wall jumping, star collection, scoring and respawn. Testing exposed a tiled
+wall collision problem, which was fixed and retested. The existing ECS tests
+still report two failures associated with their test setups. Audible playback,
+the lab environment and the second spike-wall section's dash-only behavior
+were not independently verified in that review.
