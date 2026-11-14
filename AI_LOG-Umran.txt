@@ -1,0 +1,355 @@
+All chats by ONLY Mohammad Umran Rahman
+
+[Nov 2] Entry 1
+Prompt: "ok so follow the ai policy strictly and also my goal is to learn but i dont
+have much time either so we go step by step component by component... which one do i
+start with"
+Used for: concept explanation (ECS design, ComponentStorage, kNullComponent index
+table). No code taken.
+
+[Nov 2] Entry 2
+Prompt: "lets finish my 5 components and managers first"
+Used for: AI suggested mEntities, mValid, mFreeIDs and the includes <string>,
+<cstddef>, <vector>. Marked AI-Assisted in code.
+
+[Nov 2] Entry 3
+Prompt: "ok this isnt helping as much"
+Used for: AI gave full code for CreateEntity, RemoveEntity, IsValid with line
+comments. I read and typed it myself.
+Reflection: My first typed version had an inverted empty() check and no
+new-ID branch. Learned the vector never shrinks, so IDs stay stable and
+removal only flips a flag and records the slot.
+
+[Nov 2] Entry 4
+Prompt: pasted typed EntityManager and test, asked how to run the test.
+Used for: AI found 3 bugs and gave the cmake build/run commands.
+
+[Nov 2] Entry 5
+Prompt: pasted compiler error (pop_back(true)).
+Used for: AI explained it should be push_back and flagged missing const and
+unused-parameter warnings. I made the fixes myself.
+
+[Nov 2] Entry 6
+Prompt: "yeah it prints 0, why and lets do the next part"
+Used for: AI provided the component half of EntityManager (mStorages, mComponentIndex,
+TypeIndex, ReleaseIfPresent, Add/Remove/Has/GetComponent, GetComponentStorage,
+the RemoveEntity fold expression) and the test. I typed it after reading the
+explanation. These are AI-assisted: TypeIndex and the remove-all-components step
+are items the lecture says to write ourselves.
+Reflection: I made 4 mistakes while typing: missing parentheses on std::get,
+GetComponent instead of GetComponentStorage, an inverted assert, and a
+misplaced bracket in HasComponent. Learned that each component type has its own
+storage, and an entity finds its data through the index table.
+
+[Nov 2] Entry 7
+Prompt: pasted lecture slides, asked for help according to them.
+Used for: AI confirmed the design matches Lecture 13 and flagged the draw-order
+issue with reused entity IDs. No code taken.
+
+[Nov 2] Entry 8
+Prompt: pasted compile errors and my EntityManager.h, asked what to fill in.
+Used for: AI identified the 4 fixes above. I applied them myself.
+
+[Nov 2] Entry 9
+Prompt: "its zero and yes i copied down your code to both understand what i am
+doing and i need proper code docs for all with AI-assisted comments"
+Used for: AI wrote the doc comments for EntityManager.h and a stricter static_assert
+in TypeIndex, which I applied. The begin/end iterator block is from the Lecture 14
+slides, not AI; I retyped it.
+Reflection: The iterator test passed. The docs helped me see the lifetime rules: a T&
+can dangle after AddComponent, and removal marks slots invalid instead of erasing.
+
+[Nov 2] Entry 10
+Prompt: "ok that works so i just push EntityManager since its complete now? right"
+Used for: AI reviewed EntityManager.h and advised keeping EngineTest.cpp local.
+I applied the static_assert fix myself and pushed only EntityManager.h.
+
+[Nov 6] Entry 11
+Prompt: "function/file by function by file not a giant chunk with documentation"
+Used for: AI provided SpriteManager.h (includes, private members, deleted copy
+operations, doc comments). I read it, then copied it in.
+Reflection: mTextures is an unordered_map so textures keep stable addresses for
+the sprites that point at them. mSprites is a vector whose index is the SpriteID.
+
+[Nov 6] Entry 12
+Prompt: "whats the commands for building again", then pasted build output with
+stub warnings.
+Used for: AI gave the build commands and provided RegisterTexture. I read it, then
+copied it in.
+Reflection: It built with no errors, and the stub warnings went away once the real
+bodies were in. A missing texture triggers an assert, so I treat a missing asset as a
+programming error.
+
+[Nov 6] Entry 13
+Prompt: "without error but of course shows error due to get sprite stub"
+Used for: AI provided GetSprite. I read it, then copied it in.
+Reflection: SpriteManager works. Sprites point at textures, so textures need stable
+addresses (unordered_map, not vector). One loaded sheet is shared by many sprites
+through different rectangles, and a SpriteID is just an index into a vector.
+
+[Nov 6] Entry 14
+Prompt: pasted SystemManager.h and ECSEngine.h, asked to start SystemManager.
+Used for: concept explanation only. SystemManager.h is unchanged TA code. The optional
+doc comments and includes AI suggested were not applied.
+
+[Nov 6] Entry 15
+Prompt: "didnt write anything cause i didnt do anything in SystemsManager.h since
+its already done"
+Used for: AI suggested a virtual destructor on EngineView and default values for
+running/step/debug in ECSEngine.h. I read it, then copied it in.
+
+[Nov 6] Entry 16
+Prompt: "OK BUT BEFORE THAT I DO COPY AND PASTE YOUR CODE BUT AFTER READING WHAT YOU SAY"
+(plus pasted Keyboard.h, InputComponent.h and the WindowManager files)
+Used for: AI provided ProcessEvents in ECSEngine.h. AI also suggested #pragma once
+for Keyboard.h, which I added. I read the code, then copied it in.
+Reflection: It compiles. It first ran with an InputComponent once InputSystem was
+being built, so it is not fully tested yet.
+
+[Nov 6] Entry 17
+Prompt: "OK ONLY WORKED ON ECS ENGINE AND NOTHING ELSE WAS TOUCHED FOR NOW"
+Used for: AI provided Run and flagged the missing <optional> include, which I added.
+The constructor and destructor are unchanged template code.
+Reflection: The window opens and shows black, as expected, because no system
+draws yet.
+
+[Nov 6] Entry 18
+Prompt: "output is a black screen" + pasted SpriteSystem.h and SpriteComponent.h;
+then "how was 4b written and how did you know from my notes"
+Used for: AI explained the black screen and provided SpriteComponent defaults and
+SpriteSystem::Run. Design came from my Lecture 14 notes and the spec; scaling the
+sprite to bounds was the AI's choice. AI also flagged missing includes in
+SpriteSystem.h. I read it, then copied it in.
+Reflection: A 64x64 tile appears at (100,100) with worldSpace = false. Needed:
+the missing includes, worldSpace default, and the PNG path (first run asserted
+because the file wasn't in the working directory). Not yet tested: world-space
+drawing, because WindowManager::WorldToWindow is still a stub. Known weakness:
+sprites draw in entity-ID order, so reused IDs can draw behind older entities.
+
+[Nov 9] Entry 19
+Prompt: "so we agreed i am doing movement, gravity and input component and system so
+also ill ask about location component since i use that" (pasted the stubs)
+Used for: AI provided kFixedDt (Timing.h) and MovementSystem::Run, and flagged the
+missing includes in the stub. Design came from the spec and Lecture 14 slides.
+I read it, then copied it in.
+Reflection: It worked first try. The tile slid right at a steady speed and left the
+window after about 12 seconds. Each frame the system adds velocity * dt to the
+top-left location, and sprites and collision boxes follow because they are stored
+relative to it. Limitation: dt is a fixed 1/60 s, so if the game runs below 60 FPS,
+movement slows down instead of staying in real time. I accepted that for predictable
+collisions.
+
+[Nov 9] Entry 20
+Prompt: "ok it did and what should the reflection be and then we go to the next part"
+Used for: AI drafted the Entry 19 reflection and provided GravitySystem::Run (basic
+gravity: velocity += acceleration * dt, with disabledTimer counted in frames).
+I read it, then copied it in.
+Reflection: The block falls and curves as expected. I hit three errors: a leftover
+closing brace in GravitySystem.h, GravityComponent missing from the component list
+(caught by the static_assert), and system type lists not matching the engine's.
+Fixed by using one COMPONENTS macro. I understand that gravity changes velocity and
+Movement changes location, which is why the order is Gravity, Movement. Limitation:
+fixed dt, and disabledTimer being in frames is my assumption, not confirmed with Chris.
+
+[Nov 9] Entry 21
+Prompt: "ok the block falls" + pasted CollisionComponent.h
+Used for: AI provided the fall multiplier (stronger gravity while falling) in
+GravitySystem. I read it, then copied it in. AI also suggested a wall-slide cap,
+which I did not apply because CollisionSystem does not set the wall flags yet.
+Reflection: I tested multipliers of 2 and 3, and the block fell faster with the
+higher value, so it only affects falling (velocity.y > 0, since screen y points
+down). My first version computed gravityY but still added gc.acceleration.y, and
+I had not defined kFallGravityMultiplier, so the multiplier had no effect until I
+fixed both. The value 3.0 is provisional, because I can't judge the feel until
+InputSystem gives a real jump. The wall-slide cap is not implemented yet.
+
+[Nov 9] Entry 22
+Prompt: "actually with all the files i gave isnt frames better or due to the lecture
+notes its better to do px/s"
+Used for: AI compared unit options. It recommended px/s for velocities and
+accelerations (LocationComponent.h comments, Lectures 14 and 17) and frames for
+timers (SpawnComponent, CameraShake). I decided to test the template values first
+instead of rescaling. No code taken.
+
+[Nov 9] Entry 23
+Prompt: "before that why couldnt we use the values from the template and for now
+call it a template not ta"
+Used for: AI agreed to keep the template constants. AI added the includes, the unit
+comment and /*engine*/. kDashInterval changed from 25 to 60 frames to match the
+spec's once-per-second rule. I read it, then copied it in.
+Reflection: The constants are in. Whether the template values work with px/s systems
+is decided in Entry 24.
+
+[Nov 9] Entry 24
+Reflection: My first test setup had InputComponent listed twice in COMPONENTS and no
+InputSystem added. With the template constants the tile did not visibly move: a debug
+print confirmed key events arrived, but 5 px/s^2 gives almost no motion. I rescaled to
+kMaxRunVelocity 400, kGroundRunAcceleration 1500 and kAirRunAcceleration 1000
+(template: 15, 5, 4), and the tile then slid and reversed with Left and Right. The
+template values were too small for px/s systems.
+
+
+[Nov 10] Entry 25
+Prompt: "so whats next and what do i do to complete input? and am i completing all three sections"
+Used for: AI listed the remaining Input behaviors and provided deceleration using
+boolean key checks to avoid a -Wfloat-equal warning. I read it, then copied it in.
+Reflection: The tile slowed to a stop smoothly after releasing the key, with no
+visible jitter. The clamping on the velocity drop is what prevents overshooting
+zero. Tested by eye only, with one entity on a flat screen and no collisions.
+
+[Nov 11] Entry 26
+Prompt: "ok all these are .h files for collisions and we agreed i am doing collisions"
+(pasted CollisionComponent.h and the two system stubs)
+Used for: AI provided CollisionLateSystem::Run, the world-coordinate copy of the
+box, and the hand-run test. Design from Lecture 17 notes and the spec. I read it,
+then copied it in.
+Reflection: The hand-run asserts passed and the tile behaved as before. The collision
+box is stored relative to the location, so adding the location gives the world box
+that CollisionSystem needs. The flags are left alone because Input and Gravity read
+last frame's values, and CollisionSystem resets them itself.
+
+[Nov 12] Entry 27
+Prompt: "ya sure but so we finish the engine as soon as we can?"
+Used for: AI provided the first version of CollisionSystem (dynamic-vs-static only,
+vertical pass before horizontal pass, setting the onGround/onCeiling/onLeftWall/
+onRightWall flags) and the floor test. Design came from my Lecture 17 notes. I read
+it, then copied it in. Chris later added the land sound, camera shake and star pickup
+to this file; those parts are his.
+Reflection: The floor test worked. The tile falls, lands on the floor, stays still, and
+slides along the floor with Left and Right. My first test file was missing
+GravityComponent in COMPONENTS, the Gravity and Collision systems, and the floor, so
+nothing could collide until I added them. Vertical is resolved before horizontal
+because otherwise landing on a floor can register as a side hit at tile edges, and
+previousCollisionBox tells the system which side the player came from.
+Limitations: it checks every dynamic entity against every static one, so it won't
+scale to large maps. I only tested the floor. Wall and ceiling collisions were not
+tested. Star bounce was added afterwards (Entries 29-31); spikes and respawn are not
+done.
+
+[Nov 12] Entry 28
+Prompt: "ya sure where and what to fill" (after asking for the full InputSystem)
+Used for: AI provided the full InputSystem::Run (air acceleration, jump, variable jump
+height, fast fall, wall jump, dash), the new tuning constants, the Key:: static_assert,
+the wall-slide cap in GravitySystem, and a clamp that brings speed back to run speed
+after a dash. I read it, then copied it in. Chris added the jump and wall sounds in
+InputSystem.h; those parts are his.
+Reflection: Holding Z jumps higher than a tap, and Down makes the fall faster. A dash
+tested going left sent the tile off the floor because my test had no boundary walls, so
+I added them. After a dash, velocity stayed at 1500, so I added a clamp back to run
+speed. A quick C press right after startup did nothing because lastDash starts at 0 and
+the dash needs 60 frames to become available. Wall slide and dash were tested on my test wall and worked: the tile slid down the wall
+slowly while holding toward it, and the dash gave a quick lunge. Wall jump also worked:
+pressing Z while touching the wall moved the tile away from the wall and up. I did not
+check for an accidental mid-air double jump away from walls. The constants (wall-slide
+speed, wall-jump push, dash speed) are still provisional guesses and need tuning on the
+real level.
+
+[Nov 12] Entry 29
+Prompt: "look give me code and like the ai attribution give me template code and give me
+the log to copy for a txt file"
+Used for: AI provided kStarBounceKeep, kStarRestSpeed, IsStar and three test asserts.
+I read it, then copied it in. Marked AI-ASSISTED in code.
+Reflection: The asserts passed after three fixes. IsStar was private, so the test
+couldn't call it; COMPONENTS was missing the camera and score components that Chris's
+code in CollisionSystem needs (the static_assert caught it); and unordered_map::at threw
+because the sounds were never registered. IsStar checks five things: the entity is
+valid, has a CollisionComponent, has a MovementComponent, has no InputComponent, and is
+not static. The bounce wasn't written yet at this point.
+
+[Nov 12] Entry 30
+Prompt: "asserts pass, and it was still looking like unlike last time well theres a
+block i opass through"
+Used for: AI explained that the player passed through the star because collision was
+dynamic-vs-static only at that point, and provided Bounce() and the four velocity lines
+in CollisionSystem. I read it, then copied it in.
+Reflection: My first edit put the star's sideways velocity on the player and used
+starId before it was declared, so it didn't compile. I moved it to the star's
+MovementComponent. After Bounce(), the star reflected its velocity and kept 0.7 of its
+speed, but the first test was uncontrollable (see Entry 31). Star-vs-star collisions
+are not done.
+
+[Nov 12] Entry 31
+Prompt: "ok bouncing uncomtrollable and write my reflections yours match mine"
+Used for: AI first blamed the rest threshold, which was wrong. After I pasted
+GravitySystem.h, AI found the cause and gave the isPlayer check for the fall multiplier
+and wall slide. I read it, then copied it in.
+Reflection: The bounces grew taller each time. The fall multiplier made gravity 3000
+px/s^2 going down but 1000 going up, so a star keeping 0.7 of its speed rose higher than
+it fell. Applying the multiplier and wall slide only to entities with an InputComponent
+fixed it: bounces got lower and the star came to rest.
+
+[Nov 13] Entry 32
+Prompt: "just help me write it or give me a template on what to write"
+Used for: AI provided the LoadMap template, the TODO fill-ins (texture registration, tile
+position, components, static collision box), and the StarSpawner skeleton. I read it, then
+copied it in. Chris wrote TileMap.h/.cpp and the SpawnSystem handler interface.
+Reflection: LoadMap loaded sky.map and world.map and created one entity per tile. The
+star spawner creates a star above the spawner tile with a random direction. LoadMap, the
+player/score setup and the StarSpawner body are AI-provided and copied in; TileMap and
+the SpawnSystem handler interface are Chris's. I fixed several errors while copying:
+missing semicolons, placeholder file names, a duplicate em declaration, and a
+LocationComponent added twice to the player.
+
+[Nov 13] Entry 33
+Prompt: "ok give me the ai prompt thing and check this main function and tell me how much
+is done and how to test it and how to edit engine test for it"
+Used for: AI reviewed main.cpp, supplied the star spawn code, the player and score setup,
+and the test plan. I read it, then copied it in.
+Reflection:  The player, score and star spawner were added, the game ran on my machine
+and on the lab machines, and the player moved, collected stars and changed the score.
+
+[Nov 13] Entry 34
+Prompt: pasted IntelliSense errors for CollisionComponent.h and main.cpp
+Used for: AI explained the bit-field errors are editor-only (C++20 setting), and gave the
+starSprite parameter fix, the duplicate em fix and the digit-rectangle fix. I read it,
+then copied it in.
+Reflection: The CollisionComponent bit-field errors were editor-only warnings, and the
+real build succeeded. The starSprite and duplicate em errors were fixed by following the
+suggested edits.
+
+[Nov 13] Entry 35
+Prompt: "where to put these and what to add and replace and also can i go back to the
+original call for load map where it didnt have starSprite"
+Used for: AI explained where the map files go, reverted LoadMap to three parameters,
+and gave the loop that sets the spawner's star texture and the player start position.
+I read it, then copied it in.
+Reflection: The maps loaded once sky.map and world.map were in assets/. My first run
+crashed because a stale old binary ran after a failed build, so I now read the build
+output before running.
+
+[Nov 13] Entry 36
+Prompt: "and also things didnt look too good" (with the four spritesheets uploaded)
+Used for: AI read the star, digit and character rectangles off the sprite sheets and
+gave the replacement lines. I read it, then copied it in.
+Reflection: Before the change the player, stars and digits were tiny or showed the wrong
+tile. After using the whole character cell, the blue star rectangle and the digit
+column, they look right and the digits change with the score.
+
+[Nov 13] Entry 37
+Prompt: "none fail, all sprites that move are very small... and i still need the respawn
+when i hit a spiked block"
+Used for: AI gave the sprite size changes, the doesDamage flag in LoadMap, and the spike
+respawn block in CollisionSystem. I read it, then copied it in.
+[Pick one: The respawn when falling off the world was written by Chris / by me / was
+already in the template.]
+Reflection: Touching a spike sends the player back to the respawn point, and the camera,
+sounds and score digits work. I did not tune the spike-wall sections to the spec's exact
+wall-jump-only and dash-only requirement, so those constants (kWallJumpVelocity,
+kJumpVelocity, kDashVelocity) are still provisional guesses.
+
+[Nov 13] Entry 38
+Prompt: "you can do that plus the star since its required"
+Used for: AI provided the bonus star above the tall wall, for testing the wall jump (a
+spec requirement). I read it, then copied it in.
+Reflection: I reached the star by wall-jumping and the score went up. The position was chosen by hand from
+the map layout.
+
+[Nov 13] Entry 39
+Prompt: "that works now also make any missing test cases, i feel the game is complete"
+Used for: AI wrote the extra headless tests (Input, spikes, star pickup, ScoreSystem,
+SpawnSystem, SystemManager, TileMap, EntityManager reuse, collision edge cases). I read
+it, then copied it in. The first test file was also AI-assisted, from a template, with
+small changes by me.
+Reflection: The first build failed because RespawnComponent was missing from the test's
+component list, which the static_assert caught. After adding it, the first tests passed. The tests cover logic, not
+feel. where 97 passed 2 failed
