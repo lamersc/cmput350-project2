@@ -15,6 +15,7 @@
 #include "LocationComponent.h"
 #include "ScoreComponent.h"
 #include "SystemManager.h"
+#include "RespawnComponent.h"
 namespace ECSEngine {
 
 template <typename... Components>
@@ -75,6 +76,24 @@ public:
             if (dc.collisionBox.width <= 0 || dc.collisionBox.height <= 0) continue;
 
             const Box prev = ToBox(dc.previousCollisionBox);
+
+            // AI-ASSISTED (Claude): touching a damaging static box sends the player to its respawn point
+            if (em.template HasComponent<InputComponent>(did) &&
+                em.template HasComponent<RespawnComponent>(did)) {
+                const Box now = ToBox(dl.loc, dc.collisionBox);
+                bool hurt = false;
+                for (const auto& s : em) {
+                    Box sb;
+                    if (!GetStaticBox(em, s.GetID(), did, sb)) continue;
+                    if (!em.template GetComponent<CollisionComponent>(s.GetID()).doesDamage) continue;
+                    if (Overlaps(now, sb)) { hurt = true; break; }
+                }
+                if (hurt) {
+                    dl.loc = em.template GetComponent<RespawnComponent>(did).loc;
+                    if (mc != nullptr) mc->velocity = Point2D();
+                    continue;
+                }
+            }
 
             const bool isStar = IsStar(em, did);
 

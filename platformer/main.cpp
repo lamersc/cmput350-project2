@@ -78,6 +78,7 @@ void LoadMap(Engine& engine, const std::string& path, const std::string& file) {
                 ECSEngine::CollisionComponent cc{};
                 cc.staticEntity = 1;
                 cc.collisionBox = map.dictionary.at(ch).collisionBox;
+                if (ch == 'x') cc.doesDamage = 1;   // spike tile
                 em.AddComponent(tile, cc);
             }
 
@@ -107,7 +108,7 @@ public:
         em.AddComponent(star, ECSEngine::LocationComponent{{origin.x, origin.y - 44.f}});
         em.AddComponent(star, ECSEngine::MovementComponent{{std::cos(angle) * 250.f, std::sin(angle) * 250.f}});
         em.AddComponent(star, ECSEngine::GravityComponent{{0.f, 1000.f}});
-        em.AddComponent(star, ECSEngine::SpriteComponent{request.spawnTextureID, {{0, 0}, 40, 40}, true});
+        em.AddComponent(star, ECSEngine::SpriteComponent{request.spawnTextureID, {{-12, -12}, 64, 64}, true});
         ECSEngine::CollisionComponent cc{};
         cc.collisionBox = ECSEngine::Rect{{0, 0}, 40, 40};
         em.AddComponent(star, cc);
@@ -154,9 +155,9 @@ int main(int argc, char* argv[]) {
     em.AddComponent(player, ECSEngine::LocationComponent{{800, 500}});   // above the floor
     em.AddComponent(player, ECSEngine::MovementComponent{});
     em.AddComponent(player, ECSEngine::GravityComponent{{0, 1000}});
-    em.AddComponent(player, ECSEngine::SpriteComponent{playerSprite, {{0, 0}, 48, 48}, true});
+    em.AddComponent(player, ECSEngine::SpriteComponent{playerSprite, {{-20, -38}, 96, 96}, true});
     ECSEngine::CollisionComponent pc{};
-    pc.collisionBox = ECSEngine::Rect{{0, 0}, 48, 48};
+    pc.collisionBox = ECSEngine::Rect{{0, 0}, 56, 56};
     em.AddComponent(player, pc);
     em.AddComponent(player, ECSEngine::InputComponent{player});
 
@@ -175,6 +176,14 @@ int main(int argc, char* argv[]) {
     }
     em.AddComponent(player, score);
 
+    // AI-ASSISTED (Claude): bonus star above the tall wall, to test the wall jump (spec)
+    auto bonus = em.CreateEntity("bonusStar");
+    em.AddComponent(bonus, ECSEngine::LocationComponent{{652.f, 196.f}});
+    em.AddComponent(bonus, ECSEngine::SpriteComponent{starSprite, {{-12, -12}, 64, 64}, true});
+    ECSEngine::CollisionComponent bc{};
+    bc.collisionBox = ECSEngine::Rect{{0, 0}, 40, 40};
+    em.AddComponent(bonus, bc);
+
     // Setup Camera
     auto& wm = engine.GetWindowManager();
     auto bounds = wm.GetWindowBounds();
@@ -190,6 +199,8 @@ int main(int argc, char* argv[]) {
             break;
         }
     }
+
+    em.AddComponent(player, ECSEngine::RespawnComponent{{800, 500}});
 
     // Add all systems
     auto& sm = engine.GetSystemManager();
