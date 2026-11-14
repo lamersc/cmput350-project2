@@ -18,10 +18,12 @@ struct LocationComponent {
     Point2D loc;
 };
 
+/** Velocity applied to location at each fixed simulation step. */
 struct MovementComponent {
     Point2D velocity;  // Velocity in pixels per second
 };
 
+/** Acceleration and a frame countdown that temporarily disables gravity. */
 struct GravityComponent {
     GravityComponent(Point2D acceleration = {}, int disabledTimer = 0)
         : acceleration(acceleration), disabledTimer(disabledTimer) {}

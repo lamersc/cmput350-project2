@@ -10,6 +10,12 @@
 
 namespace ECSEngine {
 
+/**
+ * Collision state for an entity. collisionBox is relative to its location;
+ * CollisionLateSystem records previousCollisionBox in world coordinates before
+ * movement. CollisionSystem updates contact flags for the next frame.
+ * staticEntity marks an obstacle; doesDamage marks a damaging obstacle.
+ */
 struct CollisionComponent {
     uint8_t staticEntity : 1 = 0;
     uint8_t doesDamage : 1 = 0;

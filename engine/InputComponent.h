@@ -15,6 +15,11 @@ namespace ECSEngine {
 
 static_assert(Key::ScanCount == sf::Keyboard::ScancodeCount);
 
+/**
+ * Input state for an entity. keydown and lastKeydown use Key scancode indices;
+ * the event loop saves the previous state before processing new events.
+ * lastDash counts frames since the last dash, up to the configured interval.
+ */
 struct InputComponent {
     InputComponent(EntityID whichEntity = std::numeric_limits<EntityID>::max())
         : entity(whichEntity), lastDash(0) {}

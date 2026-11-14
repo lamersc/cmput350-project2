@@ -9,8 +9,8 @@
 
 namespace ECSEngine {
 
-// The sprite rectangle is relative to the entity location in the world
-// This is only defined if an entity also has a LocationComponent.
+// ScoreSystem uses the ten digit sprite IDs and three digit entity IDs to draw
+// a three-digit score, ordered from hundreds to ones.
 class ScoreComponent {
 public:
     int score = 0;

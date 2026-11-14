@@ -18,10 +18,17 @@
 #include "RespawnComponent.h"
 namespace ECSEngine {
 
+/** Receives contacts between overlapping dynamic entities. */
 template <typename... Components>
 class DynamicContactHandler {
 public:
     virtual ~DynamicContactHandler() = default;
+
+    /**
+     * Handle one contact through the borrowed engine view. Both IDs are live
+     * and overlapping when called; recheck validity after removing entities.
+     * Adding components may invalidate previously acquired component references.
+     */
     virtual void OnContact(EngineView<Components...>* engine, EntityID first, EntityID second) = 0;
 };
 
@@ -30,6 +37,7 @@ class CollisionSystem : public System<Components...> {
 public:
     using ContactHandler = DynamicContactHandler<Components...>;
 
+    /** Take ownership of an optional handler for dynamic-versus-dynamic contacts. */
     explicit CollisionSystem(std::unique_ptr<ContactHandler> handler = nullptr)
         : mDynamicContactHandler(std::move(handler)) {}
 

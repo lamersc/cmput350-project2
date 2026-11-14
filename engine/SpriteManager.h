@@ -30,7 +30,7 @@ using SpriteID = size_t;
  *  - The sf::Sprite& from GetSprite is valid only until the next RegisterTexture
  *    call (the sprite vector may reallocate). Re-fetch it each time you draw.
  *  - Not copyable: a copied sprite would still point at the original's textures.
- *  - Paths are relative to the program's working directory.
+ *  - Relative paths are resolved from the program's working directory.
  */
 class SpriteManager {
 public:
@@ -46,8 +46,16 @@ public:
      *
      * @param sourceRect region of the texture, in texture pixels.
      * @return ID to pass to GetSprite.
+     * @throws std::runtime_error if loading fails in a build with assertions disabled.
+     *         With assertions enabled, a load failure triggers an assertion first.
      */
     [[nodiscard]] SpriteID RegisterTexture(const std::string& texturePath, const Rect& sourceRect);
+
+    /**
+     * Return the manager-owned sprite for a registered ID. The ID must be valid;
+     * debug builds assert otherwise. The reference may be invalidated by the
+     * next RegisterTexture call and must not outlive this manager.
+     */
     sf::Sprite& GetSprite(SpriteID id);
 
 private:

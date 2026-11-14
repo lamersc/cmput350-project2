@@ -22,6 +22,11 @@
 
 namespace ECSEngine {
 
+/**
+ * Borrowed access to the managers used by systems. References returned by an
+ * ECSEngine view refer to engine-owned managers and must not outlive the engine.
+ * Resources returned by each manager have the lifetimes documented there.
+ */
 template <typename... Components>
 class EngineView {
 public:
@@ -34,6 +39,11 @@ public:
     virtual WindowManager& GetWindowManager() = 0;
 };
 
+/**
+ * Apply an SFML key press, key release or focus-loss event to live input
+ * components. Unknown/out-of-range scancodes and other events are ignored;
+ * focus loss clears currently held keys. The entity manager is borrowed.
+ */
 template <typename... Components>
 void ProcessInputEvent(EntityManager<Components...>& entities, const sf::Event& event) {
     if constexpr ((std::is_same_v<InputComponent, Components> || ...)) {
@@ -58,22 +68,30 @@ void ProcessInputEvent(EntityManager<Components...>& entities, const sf::Event& 
     }
 }
 
+/** Owns the managers, systems and window used by the ECS game loop. */
 template <typename... Components>
 class ECSEngine : public EngineView<Components...> {
 public:
+    /** Construct an engine and open a window with pixel dimensions and title. */
     ECSEngine(unsigned int width, unsigned int height, const std::string& name);
     ~ECSEngine();
 
+    /** Process events and run systems each frame until close or kExit, then close the window. */
     void Run();
 
+    /** Return the engine-owned sound manager; the reference must not outlive the engine. */
     SoundManager& GetSoundManager() override { return mSoundManager; }
 
+    /** Return the engine-owned sprite manager; the reference must not outlive the engine. */
     SpriteManager& GetSpriteManager() override { return mSpriteManager; }
 
+    /** Return the engine-owned entity manager; the reference must not outlive the engine. */
     EntityManager<Components...>& GetEntityManager() override { return mEntityManager; }
 
+    /** Return the engine-owned window manager; the reference must not outlive the engine. */
     WindowManager& GetWindowManager() override { return mWindowManager; }
 
+    /** Return the engine-owned system manager; the reference must not outlive the engine. */
     SystemManager<Components...>& GetSystemManager() { return mSystemManager; }
 
 private:

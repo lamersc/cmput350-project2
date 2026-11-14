@@ -59,6 +59,8 @@ Mohammad Umran Rahman's prompts and reflections are recorded in
 AI_LOG-Umran.txt. OpenAI's ChatGPT/Codex also assisted with implementation,
 review and testing of reusable engine functionality, including collision,
 input, movement, camera, rendering, score and spawning.
+Christopher also used AI to complete missing API and resource-lifetime
+documentation.
 
 The AI-generated work was reviewed and tested. The local build succeeded,
 and external regression checks and a visual game run exercised movement,
