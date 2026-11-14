@@ -15,6 +15,7 @@ using EntityID = size_t;
 
 class Entity {
 public:
+    /** Return this entity's ID; it may be reused after the entity is removed. */
     EntityID GetID() const { return mID; }
 
 private:

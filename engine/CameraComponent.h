@@ -13,20 +13,21 @@
 
 namespace ECSEngine {
 
+/** Camera position, scale and horizontal follower bounds. */
 struct CameraComponent {
     Point2D position;  // [world coordinates] position in world coordinates
     float worldUnitsPerPixel = 1.f;
-    Rect hardExclusion{};  // [screen coordinates] Area where the camera is not allowed to go
-                         // (negative of this rect)
-    Rect softExclusion{};  // [screen coordinates] Area where the camera is allowed to go (but will
-                         // scroll out)
-    float speed = 0.1f;
+    Rect hardExclusion{};  // Screen-space bounds enforced for the follower's tracked point.
+    Rect softExclusion{};  // Screen-space region before gradual tracking begins.
+    float speed = 0.1f;    // Fraction of the soft-bound correction applied per update.
 };
 
+/** Entity whose location the camera follows. */
 struct CameraFollower {
     EntityID entityID = std::numeric_limits<EntityID>::max();  // The entity that this camera follows
 };
 
+/** Alternating world-space offset and remaining update frames for camera shake. */
 struct CameraShake {
     int frameLimit = 0;
     Point2D offset;

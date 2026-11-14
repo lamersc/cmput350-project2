@@ -10,6 +10,7 @@
 
 namespace ECSEngine {
 
+/** Updates the three digit sprites referenced by each score component. */
 template <typename... Components>
 class ScoreSystem : public System<Components...> {
 public:
@@ -18,6 +19,11 @@ public:
         return name;
     }
 
+    /**
+     * Set each live digit sprite to the corresponding decimal texture. Negative
+     * scores display as zero, and only the lowest three digits are displayed.
+     * Invalid digit entities or entities without a sprite are skipped.
+     */
     tSystemReturn Run(EngineView<Components...>* engine) override {
         auto& em = engine->GetEntityManager();
         auto& scores = em.template GetComponentStorage<ScoreComponent>();

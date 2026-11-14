@@ -51,14 +51,13 @@ namespace ECSEngine {
  *  - A removed entity's ID is reused by a later CreateEntity. Do not keep an
  *    EntityID after calling RemoveEntity on it unless you re-check IsValid
  *    (note: a reused ID passes IsValid, so also clear your copy).
- *  - A T& from GetComponent, and a ComponentStorage<T>& from
- *    GetComponentStorage, are valid until the next AddComponent<T>() call
- *    for that same T (the underlying vector may reallocate), or until the
- *    EntityManager is destroyed. Do not store them across frames or across
- *    adds; re-fetch each time.
- *  - Removing a component or entity does NOT erase data. The storage slot is
- *    marked invalid (mValid) and reused later. Code that loops directly over
- *    a ComponentStorage must skip slots where mValid[i] is false.
+ *  - A T& from GetComponent can be invalidated by AddComponent<T>() for the
+ *    same T or by removing that component or entity. Re-fetch it when needed.
+ *    The ComponentStorage<T>& itself remains valid until manager destruction,
+ *    but references or iterators into its vectors can be invalidated by adds.
+ *  - Removing a component resets its value, marks its slot invalid (mValid)
+ *    and makes the slot available for reuse. Code that loops directly over a
+ *    ComponentStorage must skip slots where mValid[i] is false.
  *
  * Not thread-safe. Debug builds assert on misuse; release builds do not.
  *
@@ -130,6 +129,11 @@ public:
         return entity < mEntities.size() && mValid[entity];
     }
 
+    /**
+     * Return the current generation of a live entity ID. A reused ID gets a new
+     * generation, allowing a stored (ID, generation) pair to detect reuse.
+     * @pre IsValid(entity).
+     */
     size_t GetGeneration(EntityID entity) const {
         assert(IsValid(entity));
         return mEntities[entity].mGeneration;
@@ -137,11 +141,11 @@ public:
 
     // AI-ASSISTED (Claude)
     /**
-     * Attaches a component to an entity. The component is copied into storage.
+     * Attaches a component to an entity by moving the supplied value into storage.
      *
      * @pre IsValid(entity) and the entity does not already have a T.
-     * @warning May reallocate T's storage: any T& or ComponentStorage<T>& you
-     *          obtained earlier becomes invalid.
+     * @warning May reallocate T's element vector and invalidate T references
+     *          and iterators. The ComponentStorage<T>& itself remains valid.
      */
     template <typename T>
     void AddComponent(EntityID entity, T component) {
@@ -167,8 +171,8 @@ public:
     // AI-ASSISTED (Claude)
     /**
      * Detaches a component from an entity.
-     * The data is not erased: the storage slot is marked invalid and reused
-     * by a later AddComponent<T>.
+     * The value is reset to T{}, and the storage slot is marked invalid for
+     * reuse by a later AddComponent<T>.
      *
      * @pre IsValid(entity) and the entity has a T.
      * @post Any T& previously returned for this entity must no longer be used.
@@ -179,7 +183,7 @@ public:
         size_t& slot = mComponentIndex[entity][TypeIndex<T>()];
         ComponentStorage<T>& storage = GetComponentStorage<T>();
         storage.mStorage[slot] = T{};
-        storage.mValid[slot] = false;              // data stays, but marked dead
+        storage.mValid[slot] = false;              // slot stays, but is marked dead
         storage.mFreeList.push_back(slot);
         slot = kNullComponent;                     // entity no longer has T
     }
@@ -233,6 +237,8 @@ public:
     //FROM SLIDES "Lecture 14: Project #2 (Part 1) - Entity Manager"
     // These iterate ALL slots including removed ones. Skip dead entities with
     //     if (!em.IsValid(e.GetID())) continue;
+    // Creating a new entity can grow the vector and invalidate these iterators
+    // and references to its elements. Removed IDs can later be reused.
     using tEntity = std::vector<Entity>;
     using const_iterator = tEntity::const_iterator;
     const_iterator cbegin() const { return mEntities.begin(); }

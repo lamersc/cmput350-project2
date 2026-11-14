@@ -10,13 +10,14 @@
 
 namespace ECSEngine {
 
-// The sprite rectangle is relative to the entity location in the world
-// This is only defined if an entity also has a LocationComponent.
+// The sprite rectangle is relative to the entity's LocationComponent. Its
+// coordinates and dimensions are in world units or screen pixels according to
+// worldSpace; textureID is a SpriteManager ID, not a texture reference.
 class SpriteComponent {
 public:
     // AI-ASSISTED (Claude): default member initializers
     SpriteID textureID = 0;   // index from SpriteManager::RegisterTexture
-    Rect bounds{};            // where to draw, relative to the entity's location (world units)
+    Rect bounds{};            // where to draw, relative to the entity's location
     bool worldSpace = true;  // If false, this sprite is drawn in screen space instead of world space
 private:
 };

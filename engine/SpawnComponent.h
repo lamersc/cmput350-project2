@@ -10,11 +10,11 @@
 
 namespace ECSEngine {
 
-// The sprite rectangle is relative to the entity location in the world
-// This is only defined if an entity also has a LocationComponent.
+// Describes the type and texture to spawn, the remaining spawn count, and
+// frame-based timers consumed by SpawnSystem.
 class SpawnComponent {
 public:
-    EntityID entityID = std::numeric_limits<EntityID>::max();  // The entity that this spawn component is attached to
+    EntityID entityID = std::numeric_limits<EntityID>::max();  // Owner ID filled in the dispatched request.
     std::string spawnType;
     SpriteID spawnTextureID = std::numeric_limits<SpriteID>::max();
     int timeToNextSpawn = 0;

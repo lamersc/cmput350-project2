@@ -13,6 +13,7 @@
 
 namespace ECSEngine {
 
+/** Updates the window transform from camera, follower and optional shake data. */
 template <typename... Components>
 class CameraSystem : public System<Components...> {
 public:
@@ -21,6 +22,11 @@ public:
         return name;
     }
 
+    /**
+     * Track a valid follower horizontally using the camera's hard and soft
+     * screen-space bounds, then apply and advance any temporary shake offset.
+     * Camera position and scale are read from the camera component.
+     */
     tSystemReturn Run(EngineView<Components...>* engine) override {
         auto& em = engine->GetEntityManager();
         auto& wm = engine->GetWindowManager();
