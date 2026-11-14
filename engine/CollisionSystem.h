@@ -102,7 +102,7 @@ public:
                 Box sb;
                 if (!GetStaticBox(em, s.GetID(), did, sb)) continue;
                 Box cur = ToBox(dl.loc, dc.collisionBox);
-                if (cur.left >= sb.right || cur.right <= sb.left) continue;
+                if (prev.left >= sb.right || prev.right <= sb.left) continue;
 
                 if (prev.bottom <= sb.top + kEps && cur.bottom >= sb.top - kEps &&
                     cur.bottom >= prev.bottom && velocity.y >= 0) {  // came from above: land
